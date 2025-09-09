@@ -128,9 +128,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
     async function init() {
       try {
-        const eth = window.ethereum;
-        if (!eth) return;
-
         const provider = getProvider();
         const signer = await provider.getSigner();
         const addr = await signer.getAddress();
@@ -158,8 +155,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           });
         };
 
-        eth.on?.("accountsChanged", accountsHandler);
-        eth.on?.("chainChanged", chainHandler);
+        window.ethereum.on?.("accountsChanged", accountsHandler);
+        window.ethereum.on?.("chainChanged", chainHandler);
       } catch (e) {
         dispatch({
           type: "ERROR",

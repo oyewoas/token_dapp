@@ -23,7 +23,6 @@ function App() {
       dispatch({
         type: "SET_CLIENTS",
         signer,
-        provider,
         chainId: Number(network.chainId),
         account: addr,
       });
@@ -47,7 +46,6 @@ function App() {
       dispatch({
         type: "SET_CLIENTS",
         signer: null,
-        provider: null,
         chainId: null,
         account: null,
       });

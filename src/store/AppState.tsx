@@ -15,7 +15,6 @@ const CONTRACT_ADDRESS =
 export type NoticeEntry = { text: string };
 
 export type AppState = {
-  provider: ethers.BrowserProvider | ethers.JsonRpcProvider | null;
   signer: ethers.Signer | null;
   account: string | null;
   contractAddress: string;
@@ -29,7 +28,6 @@ export type AppState = {
 export type AppAction =
   | {
       type: "SET_CLIENTS";
-      provider: ethers.BrowserProvider | ethers.JsonRpcProvider | null;
       signer: ethers.Signer | null;
       chainId: number | null;
       account: string | null;
@@ -43,7 +41,6 @@ export type AppAction =
   | { type: "ERROR"; error: string };
 
 const initial: AppState = {
-  provider: null,
   signer: null,
   account: null,
   chainId: null,
@@ -59,7 +56,6 @@ function reducer(state: AppState, a: AppAction): AppState {
     case "SET_CLIENTS":
       return {
         ...state,
-        provider: a.provider,
         signer: a.signer,
         chainId: a.chainId,
         account: a.account,
@@ -142,7 +138,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
         dispatch({
           type: "SET_CLIENTS",
-          provider,
           signer,
           chainId: Number(chainId),
           account: addr ?? null,

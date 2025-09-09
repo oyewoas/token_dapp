@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import { useAppState } from "../store/context";
+import { getProvider } from "../utils/provider";
 
 export function WalletBar({
   account,
@@ -14,18 +14,17 @@ export function WalletBar({
   onDisconnect: () => void;
 }) {
   const [balance, setBalance] = useState<string>("");
-  const { state } = useAppState();
-  const { provider } = state;
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let active = true;
     async function loadBalance() {
-      if (!account || !provider) {
+      if (!account) {
         setBalance("");
         return;
       }
       try {
+        const provider = getProvider();
         const bal = await provider.getBalance(account);
         if (!active) return;
         setBalance(`${ethers.formatEther(bal)} ETH`);
@@ -38,7 +37,7 @@ export function WalletBar({
     return () => {
       active = false;
     };
-  }, [account, provider]);
+  }, [account]);
 
   const handleCopy = () => {
     if (!account) return;

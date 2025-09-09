@@ -63,7 +63,7 @@ function App() {
   <div className="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0">
     {/* Title */}
     <h1 className="text-2xl sm:text-3xl font-bold text-indigo-600 tracking-tight text-center sm:text-left">
-      Task DApp
+      Token DApp
     </h1>
 
     {/* WalletBar */}

@@ -1,10 +1,8 @@
-import type { Hash } from "viem";
-
 export function ActivityLog({
   logs,
   explorerBase,
 }: {
-  logs: Array<{ text: string; hash?: Hash }>;
+  logs: Array<{ text: string; hash?: string }>;
   explorerBase?: string;
 }) {
   return (

@@ -1,14 +1,17 @@
+// src/hooks/useTaskEvents.ts
 import { useEffect, useRef, useCallback } from "react";
+import { Contract } from "ethers";
 import { useAppState } from "../store/context";
 import { useTaskRead } from "./useTaskRead";
-import { decodeEventLog, type Hash } from "viem";
+import type { EventLog } from "ethers";
 
 export function useTaskEvents() {
   const { state, dispatch, abi } = useAppState();
-  const { contractAddress, publicClient } = state;
+  const { contractAddress, provider, signer } = state;
   const { loadTasks } = useTaskRead();
+
   const EventSwitch = useCallback(
-    (eventName: string, args: Record<string, unknown> | undefined) => {
+    (eventName: string, args?: Record<string, unknown>) => {
       switch (eventName) {
         case "TaskCreated": {
           dispatch({
@@ -18,12 +21,12 @@ export function useTaskEvents() {
           dispatch({
             type: "LOG",
             text: (args?.description as string) || "Event TaskCreated",
-            hash: args?.hash as Hash,
+            hash: args?.hash as string,
           });
           break;
         }
         case "TaskUpdated": {
-          const id = args?.id as number;
+          const id = args?.id as bigint;
           const desc = args?.description as string;
           dispatch({
             type: "NOTICE",
@@ -32,12 +35,12 @@ export function useTaskEvents() {
           dispatch({
             type: "LOG",
             text: `Event TaskUpdated: #${id}${desc ? ` -> ${desc}` : ""}`,
-            hash: args?.hash as Hash,
+            hash: args?.hash as string,
           });
           break;
         }
         case "TaskCompleted": {
-          const id = args?.id as number;
+          const id = args?.id as bigint;
           dispatch({
             type: "NOTICE",
             text: `Task #${id} completed`,
@@ -45,7 +48,7 @@ export function useTaskEvents() {
           dispatch({
             type: "LOG",
             text: `Event TaskCompleted: #${id}`,
-            hash: args?.hash as Hash,
+            hash: args?.hash as string,
           });
           break;
         }
@@ -53,6 +56,7 @@ export function useTaskEvents() {
     },
     [dispatch]
   );
+
   // 🔹 debounce task refresh
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scheduleRefresh = useCallback(() => {
@@ -64,40 +68,36 @@ export function useTaskEvents() {
   }, [loadTasks]);
 
   useEffect(() => {
-    if (!publicClient || !contractAddress) return;
+    if (!provider || !contractAddress) return;
 
-    // If you need to fetch logs, use an async IIFE
-    // fetch past logs once
+    // use signer if available, otherwise readonly provider
+    const runner = signer ?? provider;
+    const contract = new Contract(contractAddress, abi, runner);
 
-    const unwatch = publicClient.watchContractEvent({
-      address: contractAddress,
-      abi,
-      onLogs: (logs) => {
-        for (const log of logs) {
-          const { eventName, args } = decodeEventLog({
-            abi,
-            data: log.data,
-            topics: log.topics,
-          });
-          if (!eventName) continue;
-          EventSwitch(eventName, args as Record<string, unknown> | undefined);
-        }
+    // attach listeners
+    const handleTaskCreated = (id: bigint, description: string, event: EventLog) => {
+      EventSwitch("TaskCreated", { id, description, hash: event?.transactionHash });
+      scheduleRefresh();
+    };
 
-        // 🔹 schedule one refresh for all events
-        scheduleRefresh();
-      },
-    });
+
+    const handleTaskUpdated = (id: bigint, description: string, event: EventLog) => {
+      EventSwitch("TaskUpdated", { id, description, hash: event?.transactionHash });
+      scheduleRefresh();
+    };
+
+    const handleTaskCompleted = (id: bigint, event: EventLog) => {
+      EventSwitch("TaskCompleted", { id, hash: event?.transactionHash });
+      scheduleRefresh();
+    };
+
+    contract.on("TaskCreated", handleTaskCreated);
+    contract.on("TaskUpdated", handleTaskUpdated);
+    contract.on("TaskCompleted", handleTaskCompleted);
 
     return () => {
-      unwatch?.();
+      contract.removeAllListeners();
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
     };
-  }, [
-    publicClient,
-    contractAddress,
-    scheduleRefresh,
-    abi,
-    dispatch,
-    EventSwitch,
-  ]);
+  }, [provider, signer, contractAddress, abi, EventSwitch, scheduleRefresh]);
 }

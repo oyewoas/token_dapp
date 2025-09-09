@@ -1,33 +1,31 @@
+// src/components/WalletBar.tsx
 import { useEffect, useState } from "react";
-import type { Address, Chain } from "viem";
-import { formatEther } from "viem";
+import { ethers } from "ethers";
 import { useAppState } from "../store/context";
 
 export function WalletBar({
   account,
-  chain,
   chainLabel,
   onConnect,
   onDisconnect,
 }: {
-  account: Address | null;
-  chain: Chain | undefined;
+  account: string | null;
   chainLabel: string;
   onConnect: () => void;
   onDisconnect: () => void;
 }) {
   const [balance, setBalance] = useState<string>("");
   const { state } = useAppState();
-  const { publicClient } = state;
+  const { provider } = state;
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
-        if (account && publicClient) {
-          const bal = await publicClient.getBalance({ address: account });
+        if (account && provider) {
+          const bal = await provider.getBalance(account);
           if (!active) return;
-          setBalance(`${formatEther(bal)} ETH`);
+          setBalance(`${ethers.formatEther(bal)} ETH`);
         } else {
           setBalance("");
         }
@@ -39,7 +37,7 @@ export function WalletBar({
     return () => {
       active = false;
     };
-  }, [account, publicClient]);
+  }, [account, provider]);
 
   return (
     <div className="w-full max-w-xl mx-auto mb-6 p-6 bg-gradient-to-br from-indigo-50 to-white rounded-2xl shadow-lg flex flex-col gap-4">
@@ -50,7 +48,7 @@ export function WalletBar({
             Network
           </span>
           <span className="text-sm font-bold text-indigo-900">
-            {chainLabel || chain?.name || "Unknown"}
+            {chainLabel || "Unknown"}
           </span>
         </div>
 

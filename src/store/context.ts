@@ -1,11 +1,11 @@
 import { createContext, useContext } from "react";
-import type { Abi } from "viem";
 import type { AppAction, AppState } from "./AppState";
+import type { InterfaceAbi } from "ethers";
 
 export type AppContextValue<State, Action> = {
   state: State;
   dispatch: React.Dispatch<Action>;
-  abi: Abi;
+  abi: InterfaceAbi;
 };
 
 export const Ctx = createContext<AppContextValue<AppState, AppAction> | null>(

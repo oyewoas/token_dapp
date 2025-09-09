@@ -8,11 +8,9 @@ const CONTRACT_ADDRESS =
   typeof import.meta.env.VITE_CONTRACT_ADDRESS === "string" &&
   import.meta.env.VITE_CONTRACT_ADDRESS.startsWith("0x")
     ? (import.meta.env.VITE_CONTRACT_ADDRESS as `0x${string}`)
-    : "0x5f4e91138f7557227fD80c7417c3ecED2A4f9E4b";
+    : "0x0AB8b787ffEF496212237B4f8d33B9276E3c4931";
 
-export type Task = { id: bigint; description: string; completed: boolean };
 
-export type LogEntry = { text: string; hash?: string };
 export type NoticeEntry = { text: string };
 
 export type AppState = {
@@ -21,11 +19,9 @@ export type AppState = {
   account: string | null;
   contractAddress: string;
   chainId: number | null;
-  tasks: Task[];
   isLoading: boolean;
   txPending: boolean;
   notices: NoticeEntry[];
-  logs: LogEntry[];
   error: string;
 };
 
@@ -39,10 +35,8 @@ export type AppAction =
     }
   | { type: "SET_ACCOUNT"; account: string | null }
   | { type: "SET_CHAIN_ID"; chainId: number | null }
-  | { type: "SET_TASKS"; tasks: Task[] }
   | { type: "SET_LOADING"; isLoading: boolean }
   | { type: "SET_TX"; txPending: boolean }
-  | { type: "SET_LOGS"; logs: LogEntry[] }
   | { type: "NOTICE"; text: string }
   | { type: "LOG"; text: string; hash?: string }
   | { type: "ERROR"; error: string };
@@ -52,12 +46,10 @@ const initial: AppState = {
   signer: null,
   account: null,
   chainId: null,
-  tasks: [],
   isLoading: false,
   txPending: false,
   contractAddress: CONTRACT_ADDRESS,
   notices: [],
-  logs: [],
   error: "",
 };
 
@@ -75,23 +67,15 @@ function reducer(state: AppState, a: AppAction): AppState {
       return { ...state, account: a.account };
     case "SET_CHAIN_ID":
       return { ...state, chainId: a.chainId };
-    case "SET_TASKS":
-      return { ...state, tasks: a.tasks };
     case "SET_LOADING":
       return { ...state, isLoading: a.isLoading };
     case "SET_TX":
       return { ...state, txPending: a.txPending };
-    case "SET_LOGS":
-      return { ...state, logs: a.logs };
+
     case "NOTICE":
       return {
         ...state,
         notices: [{ text: a.text }, ...state.notices].slice(0, 5),
-      };
-    case "LOG":
-      return {
-        ...state,
-        logs: [{ text: a.text, hash: a.hash }, ...state.logs].slice(0, 25),
       };
     case "ERROR":
       return { ...state, error: a.error };
@@ -154,36 +138,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         const signer = await provider.getSigner();
         const addr = await signer.getAddress();
         const { chainId } = await provider.getNetwork();
-
-        // fetch historical logs
-        try {
-          const logs = await provider.getLogs({
-            address: state.contractAddress,
-            fromBlock: 0n,
-            toBlock: "latest",
-          });
-          for (const log of logs) {
-            try {
-              const parsed = iface.parseLog({
-                topics: log.topics,
-                data: log.data,
-              });
-              if (parsed) {
-                const { id, description } = parsed.args as { id?: bigint; description?: string };
-
-                EventSwitch(parsed.name, {
-                  id,
-                  description,
-                  hash: log.transactionHash,
-                });
-              }
-            } catch (err) {
-              console.warn("Failed to parse log:", log, err);
-            }
-          }
-        } catch (err) {
-          console.warn("Failed to fetch logs:", err);
-        }
 
         dispatch({
           type: "SET_CLIENTS",

@@ -1,34 +1,13 @@
 // src/App.tsx
-import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { WalletBar } from "./components/WalletBar";
-import { TaskForm } from "./components/TaskForm";
-import { TaskList } from "./components/TaskList";
-import { Notices } from "./components/Notices";
-import { ActivityLog } from "./components/ActivityLog";
 import { useAppState } from "./store/context";
 import { getErrorMessage } from "./utils/errors";
-import { getChainLabel, getExplorerBase } from "./utils/chain";
-import { useTaskEvents } from "./hooks/useTaskEvents";
-import type { Task } from "./types";
-import { useTaskRead } from "./hooks/useTaskRead";
-import { useTaskWrite } from "./hooks/useTaskWrite";
+import { getChainLabel } from "./utils/chain";
+import { TokenActions } from "./components/TokenActions";
 
 function App() {
   const { state, dispatch } = useAppState();
-  const { contractAddress, signer, account, chainId } = state;
-
-  const [newTaskDesc, setNewTaskDesc] = useState("");
-  const [editingTaskId, setEditingTaskId] = useState<bigint | null>(null);
-  const [editingTaskDesc, setEditingTaskDesc] = useState("");
-
-  const canRead = Boolean(contractAddress && signer?.provider);
-  const canWrite = Boolean(contractAddress && signer && account);
-
-  // Hooks
-  const { loadTasks } = useTaskRead();
-  useTaskEvents();
-  const { createTask, updateTask, completeTask } = useTaskWrite();
 
   // Wallet Actions
   async function connectWallet() {
@@ -77,101 +56,43 @@ function App() {
     }
   }
 
-  // Task Actions
-  async function onCreateTask() {
-    if (!canWrite || !signer || !contractAddress || !newTaskDesc.trim()) return;
-    await createTask(newTaskDesc, () => {
-      setNewTaskDesc("");
-      loadTasks();
-    });
-  }
-
-  async function onSaveEdit() {
-    if (!canWrite || !signer || !contractAddress || editingTaskId === null || !editingTaskDesc.trim())
-      return;
-    await updateTask(editingTaskId, editingTaskDesc, () => {
-      setEditingTaskId(null);
-      setEditingTaskDesc("");
-      loadTasks();
-    });
-  }
-
-  async function onCompleteTask(id: bigint) {
-    if (!canWrite || !signer || !contractAddress) return;
-    await completeTask(id, () => {
-      loadTasks();
-    });
-  }
-
-  // Initial load
-  useEffect(() => {
-    if (canRead) {
-      loadTasks();
-    } else {
-      dispatch({ type: "SET_TASKS", tasks: [] });
-    }
-  }, [canRead, loadTasks, dispatch]);
-
-  const chainLabel = getChainLabel(chainId);
-  const explorerBase = getExplorerBase(chainId);
-
   return (
-    <div className="min-h-screen w-full bg-gray-50 px-4 py-10 flex flex-col items-center">
-      {/* Header */}
-      <h1 className="text-3xl sm:text-4xl font-extrabold text-indigo-900 text-center mb-6">
-        Task dApp
-      </h1>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-100 text-gray-900 flex flex-col">
+      {/* Header / Wallet */}
+   <header className="w-full border-b border-gray-200 bg-white/70 backdrop-blur-md sticky top-0 z-20">
+  <div className="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0">
+    {/* Title */}
+    <h1 className="text-2xl sm:text-3xl font-bold text-indigo-600 tracking-tight text-center sm:text-left">
+      Task DApp
+    </h1>
 
-      {/* Wallet Bar under header */}
-      <div className="w-full max-w-4xl mb-6">
-        <WalletBar
-          account={account}
-          chainLabel={chainLabel}
-          onConnect={connectWallet}
-          onDisconnect={disconnectWallet}
-        />
-      </div>
+    {/* WalletBar */}
+    <div className="w-full sm:w-auto">
+      <WalletBar
+        onConnect={connectWallet}
+        onDisconnect={disconnectWallet}
+        account={state.account}
+        chainLabel={getChainLabel(state.chainId)}
+      />
+    </div>
+  </div>
+</header>
 
-      {/* Notices */}
-      <Notices notices={state.notices} />
 
-      {/* Main Grid */}
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Column: TaskForm + TaskList */}
-        <div className="lg:col-span-2 flex flex-col gap-6 w-full">
-          <TaskForm
-            value={newTaskDesc}
-            onChange={setNewTaskDesc}
-            onSubmit={onCreateTask}
-            disabled={!canWrite || state.txPending}
-            submitting={state.txPending}
-          />
-
-          <TaskList
-            tasks={state.tasks}
-            isLoading={state.isLoading}
-            canRead={canRead}
-            onRefresh={loadTasks}
-            onStartEdit={(task: Task) => {
-              setEditingTaskId(task.id);
-              setEditingTaskDesc(task.description);
-            }}
-            onSaveEdit={onSaveEdit}
-            onChangeEdit={setEditingTaskDesc}
-            editingTaskId={editingTaskId}
-            editingTaskDesc={editingTaskDesc}
-            onComplete={onCompleteTask}
-            txPending={state.txPending}
-          />
+      {/* Main Content */}
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-10">
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">
+            Token Actions
+          </h2>
+          <TokenActions />
         </div>
+      </main>
 
-        {/* Right Column: ActivityLog */}
-        <div className="flex flex-col gap-6 w-full">
-          <div className="w-full bg-white rounded-2xl shadow-lg p-5">
-            <ActivityLog logs={state.logs} explorerBase={explorerBase} />
-          </div>
-        </div>
-      </div>
+      {/* Footer */}
+      <footer className="py-6 text-center text-sm text-gray-500">
+        Built with <span className="text-indigo-500">ethers.js</span> & Tailwind
+      </footer>
     </div>
   );
 }

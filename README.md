@@ -16,7 +16,7 @@ Task Dapp is a modern, responsive web3-powered todo application built with React
 - React & TypeScript
 - Vite
 - Tailwind CSS
-- Ethers.js / viem (for blockchain interactions)
+- Viem (for blockchain interactions)
 
 ## Getting Started
 

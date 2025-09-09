@@ -3,6 +3,7 @@ import { useCallback, useEffect, useReducer, useMemo } from "react";
 import { ethers } from "ethers";
 import abi from "../utils/abi.json";
 import { Ctx } from "./context";
+import { getProvider } from "../utils/provider";
 
 const CONTRACT_ADDRESS =
   typeof import.meta.env.VITE_CONTRACT_ADDRESS === "string" &&
@@ -14,7 +15,7 @@ const CONTRACT_ADDRESS =
 export type NoticeEntry = { text: string };
 
 export type AppState = {
-  provider: ethers.BrowserProvider | null;
+  provider: ethers.BrowserProvider | ethers.JsonRpcProvider | null;
   signer: ethers.Signer | null;
   account: string | null;
   contractAddress: string;
@@ -28,7 +29,7 @@ export type AppState = {
 export type AppAction =
   | {
       type: "SET_CLIENTS";
-      provider: ethers.BrowserProvider | null;
+      provider: ethers.BrowserProvider | ethers.JsonRpcProvider | null;
       signer: ethers.Signer | null;
       chainId: number | null;
       account: string | null;
@@ -134,7 +135,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         const eth = window.ethereum;
         if (!eth) return;
 
-        const provider = new ethers.BrowserProvider(eth);
+        const provider = getProvider();
         const signer = await provider.getSigner();
         const addr = await signer.getAddress();
         const { chainId } = await provider.getNetwork();

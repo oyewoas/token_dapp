@@ -169,12 +169,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
                 data: log.data,
               });
               if (parsed) {
-                const args = {
-                  id: parsed.args[0],
-                  description : parsed.args[1],
-                }
+                const { id, description } = parsed.args as { id?: bigint; description?: string };
+
                 EventSwitch(parsed.name, {
-                  ...args,
+                  id,
+                  description,
                   hash: log.transactionHash,
                 });
               }
